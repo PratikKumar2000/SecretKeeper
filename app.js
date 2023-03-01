@@ -126,10 +126,19 @@ app.get("/submit", function (req, res) {
   res.render("submit");
 });
 app.post("/submit", function (req, res) {
+  if (!req.user) {
+    res.render("error", {
+      error: "User does not exist",
+      path: "/login",
+    });
+  }
   const secret = req.body.secret;
   User.findById(req.user.id, function (err, user) {
     if (err) {
-      console.log(err);
+      res.render("error", {
+        error: "User does not exist",
+        path: "/login",
+      });
     } else {
       if (user) {
         user.secret = secret;
@@ -139,6 +148,11 @@ app.post("/submit", function (req, res) {
           } else {
             res.redirect("/secrets");
           }
+        });
+      } else {
+        res.render("error", {
+          error: "User does not exist with this username or password",
+          path: "/login",
         });
       }
     }
@@ -166,8 +180,10 @@ app.post("/register", (req, res) => {
     req.body.password,
     function (err, user) {
       if (err) {
-        console.log(err);
-        res.redirect("/register");
+        res.render("error", {
+          error: "User already exist with given username or password",
+          path: "/register",
+        });
       } else {
         passport.authenticate("local")(req, res, function () {
           res.redirect("/secrets");
@@ -203,7 +219,10 @@ app.post("/login", (req, res) => {
   });
   req.login(user, function (err) {
     if (err) {
-      console.error(err);
+      res.render("error", {
+        error: "User does not exist with this username or password",
+        path: "/login",
+      });
     } else {
       passport.authenticate("local")(req, res, function () {
         res.redirect("/secrets");
