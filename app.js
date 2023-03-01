@@ -15,6 +15,8 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const findOrCreate = require("mongoose-find-or-create");
 
 const port = process.env.PORT || 5000;
+const url =
+  "mongodb+srv://pratikkumar:pratikkumar@cluster0.xrzamrh.mongodb.net/test";
 
 const app = express();
 
@@ -37,12 +39,12 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-mongoose.connect("mongodb://localhost:27017/userDB", { useNewUrlParser: true });
+mongoose.connect(url, { useNewUrlParser: true });
 const userSchema = new mongoose.Schema({
   email: String,
   password: String,
   googleId: String,
-  secret: String
+  secret: String,
 });
 
 // userSchema.plugin(encrypt,{secret:process.env.SECRET,encryptedFields : ['password']});
@@ -52,16 +54,16 @@ const User = mongoose.model("User", userSchema);
 passport.use(User.createStrategy());
 
 // used to serialize the user for the session
-passport.serializeUser(function(user, done) {
-    done(null, user.id); 
-   // where is this user.id going? Are we supposed to access this anywhere?
+passport.serializeUser(function (user, done) {
+  done(null, user.id);
+  // where is this user.id going? Are we supposed to access this anywhere?
 });
 
 // used to deserialize the user
-passport.deserializeUser(function(id, done) {
-    User.findById(id, function(err, user) {
-        done(err, user);
-    });
+passport.deserializeUser(function (id, done) {
+  User.findById(id, function (err, user) {
+    done(err, user);
+  });
 });
 passport.use(
   new GoogleStrategy(
@@ -90,13 +92,12 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/secrets", (req, res) => {
-  User.find({ "secret": { $ne: null } }, function (err, user) {
+  User.find({ secret: { $ne: null } }, function (err, user) {
     if (err) {
       console.error(err);
-    }
-    else {
+    } else {
       if (user) {
-        res.render("secrets", {usersWithSecrets: user});
+        res.render("secrets", { usersWithSecrets: user });
       }
     }
   });
@@ -114,36 +115,36 @@ app.get(
   "/auth/google",
   passport.authenticate("google", { scope: ["profile"] })
 );
-app.get('/auth/google/secrets', 
-  passport.authenticate('google', { failureRedirect: '/login' }),
-  function(req, res) {
+app.get(
+  "/auth/google/secrets",
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  function (req, res) {
     // Successful authentication, redirect secrets.
-    res.redirect('/secrets');
-  });
+    res.redirect("/secrets");
+  }
+);
 app.get("/submit", function (req, res) {
-  res.render('submit');
-})
+  res.render("submit");
+});
 app.post("/submit", function (req, res) {
   const secret = req.body.secret;
-  User.findById( req.user.id , function (err, user) {
+  User.findById(req.user.id, function (err, user) {
     if (err) {
-        console.log(err);
-    }
-    else {
+      console.log(err);
+    } else {
       if (user) {
         user.secret = secret;
         user.save(function (err) {
           if (err) {
             console.log(err);
-          }
-          else {
-            res.redirect('/secrets');
+          } else {
+            res.redirect("/secrets");
           }
         });
       }
     }
-    })
-})
+  });
+});
 app.post("/register", (req, res) => {
   //   bcrypt.hash(req.body.password, saltRounds, function (err, hash) {
   //     const newuser = new User({
@@ -213,5 +214,5 @@ app.post("/login", (req, res) => {
 });
 
 app.listen(port, function () {
-  console.log("Server started on port",port);
+  console.log("Server started on port", port);
 });
