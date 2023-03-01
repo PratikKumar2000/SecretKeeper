@@ -20,7 +20,7 @@ const url = process.env.MONGOURL;
 const app = express();
 
 app.set("view engine", "ejs");
-
+app.engine("ejs", require("ejs").__express);
 app.use(
   bodyParser.urlencoded({
     extended: true,
