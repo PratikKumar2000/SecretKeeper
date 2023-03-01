@@ -15,8 +15,7 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const findOrCreate = require("mongoose-find-or-create");
 
 const port = process.env.PORT || 5000;
-const url =
-  "mongodb+srv://pratikkumar:pratikkumar@cluster0.xrzamrh.mongodb.net/test";
+const url = process.env.MONGOURL;
 
 const app = express();
 
