@@ -30,7 +30,7 @@ app.use(express.static("public"));
 
 app.use(
   session({
-    secret: "Our little secret.",
+    secret: process.env.TINY_SECRET,
     resave: false,
     saveUninitialized: false,
   })
@@ -69,7 +69,7 @@ passport.use(
     {
       clientID: process.env.CLIENT_ID,
       clientSecret: process.env.CLIENT_SECRET,
-      callbackURL: `http://secret-keeper/auth/google/secrets`,
+      callbackURL: `https://secret-keeper.cyclic.app/auth/google/secrets`,
       userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
     },
     function (accessToken, refreshToken, profile, cb) {
@@ -79,7 +79,7 @@ passport.use(
     }
   )
 );
-
+//http://localhost:5000/auth/google/secrets
 app.get("/", (req, res) => {
   res.render("home");
 });
@@ -90,10 +90,22 @@ app.get("/login", (req, res) => {
   res.render("login");
 });
 
-app.get("/secrets", (req, res) => {
+function checkAuthentication(req, res, next) {
+  if (req.isAuthenticated()) {
+    //req.isAuthenticated() will return true if user is logged in
+    next();
+  } else {
+    res.redirect("/login");
+  }
+}
+
+app.get("/secrets", checkAuthentication, (req, res) => {
   User.find({ secret: { $ne: null } }, function (err, user) {
     if (err) {
-      console.error(err);
+      res.render("error", {
+        error: err,
+        path: "/secrets",
+      });
     } else {
       if (user) {
         res.render("secrets", { usersWithSecrets: user });
@@ -104,7 +116,10 @@ app.get("/secrets", (req, res) => {
 app.get("/logout", (req, res) => {
   req.logout(function (err) {
     if (err) {
-      console.log(err);
+      res.render("error", {
+        error: err,
+        path: "/login",
+      });
     }
   });
   res.redirect("/");
@@ -144,7 +159,10 @@ app.post("/submit", function (req, res) {
         user.secret = secret;
         user.save(function (err) {
           if (err) {
-            console.log(err);
+            res.render("error", {
+              error: "Error while saving the user",
+              path: "/secrets",
+            });
           } else {
             res.redirect("/secrets");
           }
